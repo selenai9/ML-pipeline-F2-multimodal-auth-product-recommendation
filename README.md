@@ -60,5 +60,7 @@ python scripts/product_model.py
 ## Team
 
 - Selena ISIMBI: data merge, EDA, feature engineering, product recommendation model
--Joshua Agonzibwa RUSOKE: image data and facial recognition model
+  
+- Joshua Agonzibwa RUSOKE: image data and facial recognition model
+
 - Celine SHOGA: audio data and voiceprint model
