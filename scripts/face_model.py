@@ -17,7 +17,7 @@ from image_pipeline import (ROOT, FEATURES_PATH, load_image, extract_features,
                             feature_names, parse_name)
 
 MODEL_PATH = ROOT / "models" / "face_model.pkl"
-CONFIDENCE_THRESHOLD = 0.60   # the model must be at least 60% sure
+CONFIDENCE_THRESHOLD = 0.70   # the model must be at least 60% sure
 DISTANCE_MARGIN = 1.15        # how far past the largest "normal" distance is still accepted
 META_COLS = ["member", "sample_id", "augmentation"]
 
