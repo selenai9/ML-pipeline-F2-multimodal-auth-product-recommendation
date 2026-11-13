@@ -17,7 +17,7 @@ from image_pipeline import (ROOT, FEATURES_PATH, load_image, extract_features,
                             feature_names, parse_name)
 
 MODEL_PATH = ROOT / "models" / "face_model.pkl"
-CONFIDENCE_THRESHOLD = 0.70   # the model must be at least 60% sure
+CONFIDENCE_THRESHOLD = 0.70   # the model must be at least 70% sure
 DISTANCE_MARGIN = 1.15        # how far past the largest "normal" distance is still accepted
 META_COLS = ["member", "sample_id", "augmentation"]
 
@@ -92,7 +92,12 @@ def evaluate(data, cols):
 def train_and_save():
     data, cols = load_features()
     results, held_out = evaluate(data, cols)
-    best = max(results, key=lambda n: results[n]["f1"])
+    # Both models score almost the same F1 (0.969 vs 0.968 with three members),
+    # but Logistic Regression is overconfident on faces it has never seen: it
+    # accepted the stranger photo as a team member with 0.85 confidence.
+    # Random Forest spreads its votes on unfamiliar faces (stranger: 0.47), so
+    # the 70% confidence check can reject strangers. We therefore use it.
+    best = "Random Forest"
     model = candidate_models()[best]
     model.fit(data[cols].values, data["member"])
     centroids = {m: _centroid(model, data.loc[data["member"] == m, cols].values)
@@ -107,7 +112,7 @@ def train_and_save():
 def verify_face(image_path):
     """Step 1 of the system: does this photo show a team member?
 
-    Approved only if (1) the model is at least 60% sure who it is, and
+    Approved only if (1) the model is at least 70% sure who it is, and
     (2) the face is not much further from that member's usual faces than the
     member's own held-out photos were. Check 2 catches strangers, because a
     classifier always picks *someone* from the team.
