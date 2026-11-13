@@ -24,6 +24,14 @@ def ask(prompt, given):
     return given or input(prompt).strip().strip('"')
 
 
+def file_exists(path, kind):
+    """Tell the user clearly when a typed path is wrong, instead of crashing."""
+    if Path(path).is_file():
+        return True
+    print(f"Cannot find the {kind} file: {path}")
+    return False
+
+
 def predict_product(customer_id):
     """Predict the product from the customer's most recent purchase."""
     data = pd.read_csv(ROOT / "data" / "merged_dataset.csv")
@@ -46,7 +54,10 @@ def main():
     print("=== Product Recommendation System ===")
 
     # Step 1: face check
-    face = verify_face(ask("Face image path: ", args.face))
+    face_path = ask("Face image path: ", args.face)
+    if not file_exists(face_path, "face image"):
+        return
+    face = verify_face(face_path)
     if not face["approved"]:
         print(f"ACCESS DENIED (face): {face['reason']}")
         return
@@ -62,8 +73,10 @@ def main():
     print(f"A prediction is ready for customer {customer_id}. Confirm with your voice to see it.")
 
     # Step 3: voice check
-    voice = verify_voice(ask("Voice clip path (e.g. 'Yes, approve'): ", args.voice),
-                         expected_member=member)
+    voice_path = ask("Voice clip path (e.g. 'Yes, approve'): ", args.voice)
+    if not file_exists(voice_path, "voice clip"):
+        return
+    voice = verify_voice(voice_path, expected_member=member)
     if not voice["approved"]:
         print(f"ACCESS DENIED (voice): {voice['reason']}")
         return

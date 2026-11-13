@@ -17,6 +17,7 @@ Formative 2 group assignment. The system verifies a user with their face and voi
 ```
 audio/      voice clips, named <member>_<phrase> (e.g. selena_yes_approve.mp4)
 images/     face photos, named <member>_<expression> (e.g. selena_neutral.jpeg)
+            (original_heic/ keeps Celine's original iPhone files)
 data/       raw spreadsheets, merged_dataset.csv, audio_features.csv and image_features.csv
 models/     product model, face_model.pkl and voice_model.pkl
 scripts/    product_model.py, audio_pipeline.py, voice_model.py, image_pipeline.py,
@@ -63,15 +64,15 @@ Five-fold cross-validation accuracy was about 0.25 for the forests, against 0.20
 
 - A voice is approved only if the model is at least 60% sure, the voice is close to that member's own recordings, and it matches the person the face model recognised.
 
-- Results with all three members (36 rows): Random Forest scored accuracy 0.806, F1 0.810 and loss 0.620. Logistic Regression scored 0.722, 0.720 and 0.485. Random Forest was saved to `models/voice_model.pkl`.
+- Results with all three members (36 rows): Random Forest scored accuracy 0.833, F1 0.836 and loss 0.619. Logistic Regression scored 0.722, 0.720 and 0.486. Random Forest was saved to `models/voice_model.pkl`.
 
-- Every original recording was recognised correctly. All 7 mistakes were augmented copies of Celine's and Selena's clips that the model labelled as Joshua, mostly the background-noise copies. Joshua's recordings have a steady background hum, so the model has partly learned that "noisy" means Joshua. Recording his phrases again in a quiet room should improve the score.
+- Every original recording was recognised correctly. All 6 mistakes were augmented copies of Celine's and Selena's clips that the model labelled as Joshua, and three of them were the background-noise copies. Joshua's recordings have a steady background hum, so the model has partly learned that "noisy" means Joshua. Recording his phrases again in a quiet room should improve the score.
 
-- Verification tests: all 13 decisions were correct. Each member's own clips are approved (confidence 0.92 to 0.97), the same clips are denied when paired with another member's face, and the stranger's clip (`audio/unauthorized_yes_approve.m4a`) is denied at confidence 0.38.
+- Verification tests: all 13 decisions were correct. Each member's own clips are approved (confidence 0.92 to 0.97), the same clips are denied when paired with another member's face, and the stranger's clip (`audio/unauthorized_yes_approve.m4a`) is denied at confidence 0.39.
 
 ## Image and face recognition model
 
-- Each member provides 3 photos: neutral, smiling and surprised (`images/<member>_<expression>`). Celine's iPhone photos were converted from HEIC to JPG with `scripts/convert_heic.py`.
+- Each member provides 3 photos: neutral, smiling and surprised (`images/<member>_<expression>`). Celine's iPhone photos were converted from HEIC to JPG with `scripts/convert_heic.py` (the originals are kept in `images/original_heic/`).
 
 - Photos are cropped to the face (OpenCV face detector, with a centre crop if no face is found). Augmentations (6 per photo): rotated left and right by 15 degrees, flipped, grayscale, brighter and darker.
 

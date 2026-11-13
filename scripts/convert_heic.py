@@ -5,6 +5,7 @@ from pillow_heif import register_heif_opener
 register_heif_opener()  # lets Pillow open .heic files
 
 images_dir = Path(__file__).resolve().parent.parent / "images"
+heic_dir = images_dir / "original_heic"   # the phone's original HEIC files are kept here
 
 # old file name -> new file name
 renames = {
@@ -14,7 +15,7 @@ renames = {
 }
 
 for old, new in renames.items():
-    img = Image.open(images_dir / old)
+    img = Image.open(heic_dir / old)
     img = ImageOps.exif_transpose(img).convert("RGB")
     img.save(images_dir / new, quality=95)
     print("Saved", new, img.size)
