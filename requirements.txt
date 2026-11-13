@@ -1,0 +1,21 @@
+# Data, product model and notebook
+pandas
+numpy
+openpyxl
+scikit-learn
+matplotlib
+seaborn
+joblib
+ipykernel
+
+# Audio pipeline and voice model
+librosa
+soundfile
+imageio-ffmpeg
+
+# Image pipeline and face model
+pillow
+pillow-heif
+scikit-image
+# OpenCV 5 drops the face detector file the image pipeline uses, so stay on 4.x
+opencv-python==4.10.0.84
