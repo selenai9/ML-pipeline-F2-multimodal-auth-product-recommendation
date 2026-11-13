@@ -55,11 +55,12 @@ Five-fold cross-validation accuracy was about 0.25 for the forests, against 0.20
 ## Image and face recognition model
 
 - Each member provides 3 photos: neutral, smiling and surprised (`images/<member>_<expression>`). Celine's iPhone photos were converted from HEIC to JPG with `scripts/convert_heic.py`.
-- Photos are cropped to the face. Augmentations (6 per photo): rotated left and right by 15 degrees, flipped, grayscale, brighter and darker.
+- Photos are cropped to the face (OpenCV face detector, with a centre crop if no face is found). Augmentations (6 per photo): rotated left and right by 15 degrees, flipped, grayscale, brighter and darker.
 - Features (948 per row): HOG edge features plus colour histograms, saved to `data/image_features.csv`.
-- The model is tested leave-one-expression-out: it is trained on two expressions and tested on the third. Logistic Regression and Random Forest both scored accuracy 1.000 and F1 1.000. Logistic Regression had the lower loss (0.018 against 0.340), so it was saved to `models/face_model.pkl`.
-- A face is approved only if the model is at least 60% sure and the face is close to that member's own photos, so strangers are rejected.
-- The model is currently trained on Selena's and Celine's photos only. With so few people and photos, the perfect score should be read carefully.
+- The model is tested leave-one-expression-out: it is trained on two expressions and tested on the third. Random Forest scored accuracy 0.976 and F1 0.976 (loss 0.302); Logistic Regression scored 0.952 and 0.952 (loss 0.148). Random Forest was saved to `models/face_model.pkl`.
+- A face is approved only if the model is at least 70% sure (`CONFIDENCE_THRESHOLD = 0.70` in `scripts/face_model.py`) and the face is close to that member's own photos.
+- **Why 70%:** at 60%, a stranger's photo (`images/unauthorized_person.jpg`) was only just accepted (confidence 0.60). We raised the cutoff to 70%, and the stranger is now denied, while Selena's own photo still scores 0.99. A stricter cutoff means a real member may sometimes be rejected. We accepted this because it is safer to wrongly reject a member than to let a stranger in. We tested with only one stranger photo, so 70% is a demonstration setting and not a proven security level.
+- The model is currently trained on Selena's and Celine's photos only. With so few people and photos, the scores should be read carefully, and the voice check acts as a second layer.
 
 ## Command-line app
 
@@ -69,6 +70,12 @@ Successful transaction:
 
 ```
 python scripts/app.py --face images/selena_neutral.jpeg --voice audio/selena_yes_approve.mp4
+```
+
+Unauthorized attempt (a stranger's photo, denied at the face step):
+
+```
+python scripts/app.py --face images/unauthorized_person.jpg --voice audio/selena_yes_approve.mp4
 ```
 
 Unauthorized attempt (a stranger's voice):
@@ -109,7 +116,7 @@ python scripts/voice_model.py --verify audio/selena_yes_approve.mp4 --member sel
 Install the extra packages for the face part, then extract the image features and train the face model:
 
 ```
-pip install scikit-image pillow pillow-heif
+pip install scikit-image pillow pillow-heif opencv-python==4.10.0.84
 python scripts/convert_heic.py
 python scripts/make_image_features.py
 python scripts/make_face_model.py
@@ -119,8 +126,8 @@ python scripts/make_face_model.py
 
 ## Team
 
-- Selena ISIMBI: data merge, EDA, feature engineering, product recommendation model
+- Selena ISIMBI: data merge, EDA, feature engineering, product recommendation model, command-line app
   
 - Joshua Agonzibwa RUSOKE: audio data, voiceprint model, unauthorized voice demo, report and video
 
-- Celine SHOGA: image data, facial recognition model and command-line app
+- Celine SHOGA: image data, facial recognition model
