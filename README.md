@@ -13,13 +13,13 @@ Formative 2 group assignment. The system verifies a user with their face and voi
 
 ```
 audio/      voice clips, named <member>_<phrase> (e.g. selena_yes_approve.mp4)
-data/       raw spreadsheets, merged_dataset.csv and audio_features.csv
-models/     saved product model and its input columns, voice_model.pkl
-scripts/    product_model.py, audio_pipeline.py, voice_model.py
+images/     face photos, named <member>_<expression> (e.g. selena_neutral.jpeg)
+data/       raw spreadsheets, merged_dataset.csv, audio_features.csv and image_features.csv
+models/     product model, face_model.pkl and voice_model.pkl
+scripts/    product_model.py, audio_pipeline.py, voice_model.py, image_pipeline.py,
+            face_model.py, app.py, convert_heic.py, make_image_features.py, make_face_model.py
 formative2_multimodal.ipynb   data merge, EDA, feature engineering, product model, audio and voice model
 ```
-
-The face part (image features, face model and the command-line app) will be added by the other team members.
 
 ## Data merge
 
@@ -52,6 +52,33 @@ Five-fold cross-validation accuracy was about 0.25 for the forests, against 0.20
 - The model is tested leave-one-phrase-out: it is trained on one phrase and tested on the other, so it never hears the test clip.
 - A voice is approved only if the model is at least 60% sure, the voice is close to that member's own recordings, and it matches the person the face model recognised.
 
+## Image and face recognition model
+
+- Each member provides 3 photos: neutral, smiling and surprised (`images/<member>_<expression>`). Celine's iPhone photos were converted from HEIC to JPG with `scripts/convert_heic.py`.
+- Photos are cropped to the face. Augmentations (6 per photo): rotated left and right by 15 degrees, flipped, grayscale, brighter and darker.
+- Features (948 per row): HOG edge features plus colour histograms, saved to `data/image_features.csv`.
+- The model is tested leave-one-expression-out: it is trained on two expressions and tested on the third. Logistic Regression and Random Forest both scored accuracy 1.000 and F1 1.000. Logistic Regression had the lower loss (0.018 against 0.340), so it was saved to `models/face_model.pkl`.
+- A face is approved only if the model is at least 60% sure and the face is close to that member's own photos, so strangers are rejected.
+- The model is currently trained on Selena's and Celine's photos only. With so few people and photos, the perfect score should be read carefully.
+
+## Command-line app
+
+`scripts/app.py` runs the full flow: face check, product prediction, voice check. Each team member is linked to one customer from the merged dataset (Selena is customer 107, Celine is 113, Joshua is 132). The product model runs after the face check, but the predicted product is shown only if the voice also matches the same person.
+
+Successful transaction:
+
+```
+python scripts/app.py --face images/selena_neutral.jpeg --voice audio/selena_yes_approve.mp4
+```
+
+Unauthorized attempt (a stranger's voice):
+
+```
+python scripts/app.py --face images/selena_neutral.jpeg --voice audio/unauthorized_yes_approve.m4a
+```
+
+If you leave out `--face` or `--voice`, the app asks you to type the file path.
+
 ## How to run
 
 Install the packages:
@@ -78,6 +105,17 @@ Check one voice clip (optionally against the member the face model recognised):
 ```
 python scripts/voice_model.py --verify audio/selena_yes_approve.mp4 --member selena
 ```
+
+Install the extra packages for the face part, then extract the image features and train the face model:
+
+```
+pip install scikit-image pillow pillow-heif
+python scripts/convert_heic.py
+python scripts/make_image_features.py
+python scripts/make_face_model.py
+```
+
+`convert_heic.py` is only needed for HEIC photos.
 
 ## Team
 
