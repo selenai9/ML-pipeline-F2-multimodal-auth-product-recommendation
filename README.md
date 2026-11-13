@@ -21,7 +21,8 @@ data/       raw spreadsheets, merged_dataset.csv, audio_features.csv and image_f
 models/     product model, face_model.pkl and voice_model.pkl
 scripts/    product_model.py, audio_pipeline.py, voice_model.py, image_pipeline.py,
             face_model.py, app.py, convert_heic.py, make_image_features.py, make_face_model.py
-formative2_multimodal.ipynb   data merge, EDA, feature engineering, product model, audio and voice model
+formative2_multimodal.ipynb   data merge, EDA, feature engineering, product model, image and face model, audio and voice model
+requirements.txt              Python packages needed to run everything
 ```
 
 ## Data merge
@@ -62,6 +63,12 @@ Five-fold cross-validation accuracy was about 0.25 for the forests, against 0.20
 
 - A voice is approved only if the model is at least 60% sure, the voice is close to that member's own recordings, and it matches the person the face model recognised.
 
+- Results with all three members (36 rows): Random Forest scored accuracy 0.806, F1 0.810 and loss 0.620. Logistic Regression scored 0.722, 0.720 and 0.485. Random Forest was saved to `models/voice_model.pkl`.
+
+- Every original recording was recognised correctly. All 7 mistakes were augmented copies of Celine's and Selena's clips that the model labelled as Joshua, mostly the background-noise copies. Joshua's recordings have a steady background hum, so the model has partly learned that "noisy" means Joshua. Recording his phrases again in a quiet room should improve the score.
+
+- Verification tests: all 13 decisions were correct. Each member's own clips are approved (confidence 0.92 to 0.97), the same clips are denied when paired with another member's face, and the stranger's clip (`audio/unauthorized_yes_approve.m4a`) is denied at confidence 0.38.
+
 ## Image and face recognition model
 
 - Each member provides 3 photos: neutral, smiling and surprised (`images/<member>_<expression>`). Celine's iPhone photos were converted from HEIC to JPG with `scripts/convert_heic.py`.
@@ -70,13 +77,15 @@ Five-fold cross-validation accuracy was about 0.25 for the forests, against 0.20
 
 - Features (948 per row): HOG edge features plus colour histograms, saved to `data/image_features.csv`.
 
-- The model is tested leave-one-expression-out: it is trained on two expressions and tested on the third. Random Forest scored accuracy 0.976 and F1 0.976 (loss 0.302); Logistic Regression scored 0.952 and 0.952 (loss 0.148). Random Forest was saved to `models/face_model.pkl`.
+- The model is tested leave-one-expression-out: it is trained on two expressions and tested on the third. With all three members (63 rows), Random Forest scored accuracy 0.968, F1 0.968 and loss 0.419. Logistic Regression scored 0.968, 0.969 and 0.122. Only 2 rows were wrong, both augmented copies (a rotated Selena photo and a flipped Celine photo).
+
+- **Why Random Forest:** the two models score almost the same, but Logistic Regression is overconfident on faces it has never seen. It accepted the stranger's photo as Celine with 0.85 confidence. Random Forest gives the stranger only 0.47, so the confidence check rejects them. `scripts/face_model.py` therefore always saves the Random Forest to `models/face_model.pkl`.
 
 - A face is approved only if the model is at least 70% sure (`CONFIDENCE_THRESHOLD = 0.70` in `scripts/face_model.py`) and the face is close to that member's own photos.
 
-- **Why 70%:** at 60%, a stranger's photo (`images/unauthorized_person.jpg`) was only just accepted (confidence 0.60). We raised the cutoff to 70%, and the stranger is now denied, while Selena's own photo still scores 0.99. A stricter cutoff means a real member may sometimes be rejected. We accepted this because it is safer to wrongly reject a member than to let a stranger in. We tested with only one stranger photo, so 70% is a demonstration setting and not a proven security level.
+- **Why 70%:** with two members, a stranger's photo (`images/unauthorized_person.jpg`) was only just accepted at a 60% cutoff (confidence 0.60), so we raised it to 70%. With three members, every team photo scores 0.97 to 1.00 and the stranger scores 0.47, so all 10 test decisions are correct. A stricter cutoff means a real member may sometimes be rejected. We accepted this because it is safer to wrongly reject a member than to let a stranger in. We tested with only one stranger photo, so 70% is a demonstration setting and not a proven security level.
 
-- The model is currently trained on Selena's and Celine's photos only. With so few people and photos, the scores should be read carefully, and the voice check acts as a second layer.
+- **Use OpenCV 4.x.** OpenCV 5 no longer includes the face detector file, so the code quietly falls back to a centre crop. The features then come out different and the face model no longer matches. `requirements.txt` pins the version.
 
 ## Command-line app
 
@@ -86,6 +95,13 @@ Successful transaction:
 
 ```
 python scripts/app.py --face images/selena_neutral.jpeg --voice audio/selena_yes_approve.mp4
+python scripts/app.py --face images/joshua_neutral.jpg --voice audio/joshua_yes_approve.mp4
+```
+
+Wrong voice for the face (Joshua's photo with Selena's voice, denied at the voice step):
+
+```
+python scripts/app.py --face images/joshua_neutral.jpg --voice audio/selena_yes_approve.mp4
 ```
 
 Unauthorized attempt (a stranger's photo, denied at the face step):
@@ -107,7 +123,7 @@ If you leave out `--face` or `--voice`, the app asks you to type the file path.
 Install the packages:
 
 ```
-pip install pandas openpyxl scikit-learn matplotlib joblib librosa soundfile imageio-ffmpeg
+pip install -r requirements.txt
 ```
 
 Train and save the product model from the repo's main folder:
@@ -129,10 +145,9 @@ Check one voice clip (optionally against the member the face model recognised):
 python scripts/voice_model.py --verify audio/selena_yes_approve.mp4 --member selena
 ```
 
-Install the extra packages for the face part, then extract the image features and train the face model:
+Extract the image features, then train and save the face model:
 
 ```
-pip install scikit-image pillow pillow-heif opencv-python==4.10.0.84
 python scripts/convert_heic.py
 python scripts/make_image_features.py
 python scripts/make_face_model.py
@@ -142,8 +157,8 @@ python scripts/make_face_model.py
 
 ## Team Members
 
-- Selena ISIMBI: data merge, EDA, feature engineering, product recommendation model, command-line app
+- Selena Isimbi: data merge, EDA, feature engineering, product recommendation model, command-line app
   
-- Joshua Agonzibwa RUSOKE: audio data, voiceprint model, unauthorized voice demo, report and video
+- Joshua Rusoke Agonzibwa: audio data, voiceprint model, unauthorized voice demo, report and video
 
-- Celine SHOGA: image data, facial recognition model
+- Celine Shoga: image data, facial recognition model
